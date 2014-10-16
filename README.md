@@ -17,11 +17,11 @@ MyCollection = new DumbCollection('mycollection');
 
 #### DumbCollection.ready()
 
-Reactive variable.  True once the initial load from localStorage is complete (whether it has yielded any documents or not), false before.
+Reactive variable: `true` once the initial load from localStorage is complete (whether it has yielded any documents or not), `false` before.
 
 #### DumbCollection.synced()
 
-Reactive variable.  True once the first server `sync` has been completed.  On further `sync` calls are collected, this will revert to `false` until the new sync is completed.
+Reactive variable:`true` once the first server `sync` has been completed.  On further `sync` calls are collected, this will revert to `false` until the new sync is completed.
 
 #### DumbCollection.sync(options)
 
@@ -29,4 +29,24 @@ Synchronise data with the server.  Synchronisation is *always from server to cli
 
 ##### Options
 
-*
+*retain* - if set to `true`, the client collection will retain any documents which are not present on the server.  Default is `false`.
+
+*reject* - if set to `true`, the client collection will reject any new documents sent by the server.  Default is `false`.
+
+*removalCallback(removedDocs)* - callback to run once any unrecognised documents are removed from the client collection, with the removed documents passed as an argument.
+
+*insertionCallback(insertedDocs)* - callback to run once any new documents sent by the server have been inserted, with the inserted documents passed as an argument.
+
+*syncCallback(results)* - callback to run once the whole synchronisation is complete, with the results object containing the keys `removed` and `inserted`, which contain the same details as the previous callbacks respectively.
+
+*failCallback(error)* - callback to run on the failure to store the client collection in localStorage once synchronisation is complete.  This is passed the error object, which is almost always the result of the storage limit being exceeded.
+
+#### DumbCollection.clear()
+
+Clear the contents of the client-side collection, and associated local storage.
+
+## Limitations
+
+* Synchronisation is always from the server to the client by design, so the user will need to write Meteor.methods with appropriate security to perform CUD in the opposite direction.
+* The `update` method on the server collection has been renamed `_update` in an attempt to discourage its use - the synchronisation is based on `_id`s, and so any `update`s made on the server side cannot be synchronised.  Given that one cannot update the `_id` field in MongoDB, it is necessary to remove and then insert, and rather than writing a method for this, it has been left to the user to tailor to their use case.
+* localStorage is a limited size, and if this is exceeded then *no* documents will be stored locally, with synchronisation required to populate the collection on the server.  The `failCallback` will be fired in this case.
