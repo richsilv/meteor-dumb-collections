@@ -16,12 +16,11 @@ Package.on_use(function (api) {
     * Add files that should be used with this
     * package.
     */
-  api.use('amplify', 'client');
-  api.use('mongo', ['client', 'server']);
-  api.use('random', ['client', 'server']);
-  api.use('underscore', ['client', 'server']);
-  api.use('tracker', ['client']);
-  api.use('reactive-var', ['client']);
+  api.use('amplify@1.0.0', 'client');
+  api.use('mongo@1.0.7', ['client', 'server']);
+  api.use('underscore@1.0.1', ['client', 'server']);
+  api.use('tracker@1.0.3', ['client']);
+  api.use('reactive-var@1.0.3', ['client']);
 
   api.add_files('queue/queue.js', ['client', 'server']);
   api.add_files('richsilv:dumb-collections.js', ['client', 'server']);
