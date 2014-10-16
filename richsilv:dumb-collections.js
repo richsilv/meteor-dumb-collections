@@ -180,7 +180,8 @@ if (Meteor.isServer) {
 							amplify.store('dumbCollection_' + _this.name, syncedCollection);
 						}
 						catch (e) {
-							console.log("Pitches cannot be stored in Local Storage.")
+							console.log("Collection cannot be stored in Local Storage.");
+							options.failCallback && options.failCallback.call(_this, e);
 						}
 						finally {
 							console.log("Dumb Collection " + _this.name + " now has " + syncedCollection.length + " documents stored locally.");
