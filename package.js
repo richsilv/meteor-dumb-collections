@@ -22,6 +22,7 @@ Package.on_use(function (api) {
   api.use('tracker', ['client']);
   api.use('reactive-var', ['client']);
 
+  api.add_files('queue/queue.js', ['client', 'server']);
   api.add_files('richsilv:polledcollection.js', ['client', 'server']);
 
   /*

@@ -59,6 +59,7 @@ if (Meteor.isServer) {
 		this._collection = new Mongo.Collection(null);
 		this._readyFlag = new ReactiveVar(false);
 		this._syncFlag = new ReactiveVar(false);
+		this.q = queue();
 
 		for (prop in this._collection) {
 			if (typeof _this._collection[prop] === 'function')
@@ -68,11 +69,19 @@ if (Meteor.isServer) {
 		}
 
 		for (var i = existingDocs.length - 1; i >= 0; i--) {
-			_.defer(_this.insert.bind(_this, existingDocs[i]));
+			_this.q.defer(function(cb) {
+				var doc = existingDocs[i];
+				Meteor.defer(function() {
+					_this.insert.call(_this, doc);
+					cb();
+				});
+			});
 		}
-		Meteor.defer(function() {
-			_this._readyFlag.set(true);
-			console.log("Polled Collection " + name + " seeded with " + existingDocs.length.toString() + " docs from local storage.");
+		_this.q.await(function() {
+			Meteor.defer(function() {
+				_this._readyFlag.set(true);
+				console.log("Polled Collection " + name + " seeded with " + existingDocs.length.toString() + " docs from local storage.");
+			});
 		});
 
 	}
@@ -123,7 +132,7 @@ if (Meteor.isServer) {
 							results.removed = removed;
 							jobsComplete.remove = true;
 							completionDep.changed();
-							options.removalCallback && options.removalCallback.call(this, removed);
+							options.removalCallback && options.removalCallback.call(_this, removed);
 						});
 					});
 				}
@@ -137,7 +146,7 @@ if (Meteor.isServer) {
 						Meteor.defer(function() {
 							jobsComplete.insert = true;
 							completionDep.changed();
-							options.insertionCallback && options.insertionCallback.call(this, res);
+							options.insertionCallback && options.insertionCallback.call(_this, res);
 						});
 					});
 				}
@@ -154,7 +163,7 @@ if (Meteor.isServer) {
 						var syncedCollection = _this.find().fetch();
 						amplify.store('polledCollection_' + _this.name, syncedCollection);
 						console.log("Polled Collection " + _this.name + " now has " + syncedCollection.length + " documents stored locally.");
-						options.syncCallback && options.syncCallback.call(this, results);
+						options.syncCallback && options.syncCallback.call(_this, results);
 					}
 
 				});

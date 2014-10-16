@@ -1,0 +1,3 @@
+[submodule "queue"]
+	path = queue
+	url = git@github.com:mbostock/queue.git
