@@ -1,7 +1,8 @@
 Package.describe({
   name: 'richsilv:dumb-collections',
   version: '1.0.1',
-  summary: 'Meteor Collections which only sync with the server on request and are saved in local storage.'
+  summary: 'Meteor Collections which only sync with the server on request and are saved in local storage.',
+  git: 'git@github.com:richsilv/meteor-dumb-collections.git'
 });
 
 Package.on_use(function (api) {
