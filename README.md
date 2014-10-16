@@ -17,7 +17,7 @@ MyCollection = new DumbCollection('mycollection');
 
 #### DumbCollection.ready()
 
-Reactive variable: `true` once the initial load from localStorage is complete (whether it has yielded any documents or not), `false` before.
+Reactive variable: `true` once the initial load from localStorage is complete (whether it has yielded any documents or not), `false` beforehand.
 
 #### DumbCollection.synced()
 
