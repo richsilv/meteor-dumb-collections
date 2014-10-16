@@ -1,5 +1,6 @@
 Package.describe({
-  name: 'richsilv:polledcollection',
+  name: 'richsilv:dumb-collections',
+  version: '0.0.1',
   summary: 'Meteor Collections which only sync with the server on request and are saved in local storage.'
 });
 
@@ -23,7 +24,7 @@ Package.on_use(function (api) {
   api.use('reactive-var', ['client']);
 
   api.add_files('queue/queue.js', ['client', 'server']);
-  api.add_files('richsilv:polledcollection.js', ['client', 'server']);
+  api.add_files('richsilv:dumb-collections.js', ['client', 'server']);
 
   /*
    * Export global symbols.
@@ -31,12 +32,12 @@ Package.on_use(function (api) {
    * Example:
    *  api.export('GlobalSymbol');
    */
-  api.export('PolledCollection');
+  api.export('DumbCollection');
 });
 
 Package.on_test(function (api) {
-  api.use('richsilv:polledcollection');
+  api.use('richsilv:dumb-collections');
   api.use('tinytest');
   
-  api.add_files('richsilv:polledcollection_tests.js');
+  api.add_files('richsilv:dumb-collections_tests.js');
 });

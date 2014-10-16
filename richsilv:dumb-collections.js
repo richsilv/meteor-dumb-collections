@@ -2,7 +2,7 @@ if (Meteor.isServer) {
 
 	var collections = {};
 
-	PolledCollection = function(name) {
+	DumbCollection = function(name) {
 
 		var newCollection = new Mongo.Collection(name),
 			_this = this;
@@ -20,7 +20,7 @@ if (Meteor.isServer) {
 
 	Meteor.methods({
 
-		polledCollectionGetNew: function(existing, name, query) {
+		dumbCollectionGetNew: function(existing, name, query) {
 
 			return collections[name].find(_.extend(query || {}, {
 				_id: {
@@ -30,7 +30,7 @@ if (Meteor.isServer) {
 
 		},
 
-		polledCollectionGetRemoved: function(existing, name, query) {
+		dumbCollectionGetRemoved: function(existing, name, query) {
 
 			var currentIds = _.pluck(collections[name].find(query || {}, {
 				fields: {
@@ -50,16 +50,16 @@ if (Meteor.isServer) {
 
 } else if (Meteor.isClient) {
 
-	PolledCollection = function(name, maxOps, interval) {
+	DumbCollection = function(name, maxOps, interval) {
 
 		var _this = this,
-			existingDocs = amplify.store('polledCollection_' + name) || [];
+			existingDocs = amplify.store('dumbCollection_' + name) || [],
+			localStorageQueue = queue();
 
 		this.name = name;
 		this._collection = new Mongo.Collection(null);
 		this._readyFlag = new ReactiveVar(false);
 		this._syncFlag = new ReactiveVar(false);
-		this.q = queue();
 
 		for (prop in this._collection) {
 			if (typeof _this._collection[prop] === 'function')
@@ -69,7 +69,7 @@ if (Meteor.isServer) {
 		}
 
 		for (var i = existingDocs.length - 1; i >= 0; i--) {
-			_this.q.defer(function(cb) {
+			localStorageQueue.defer(function(cb) {
 				var doc = existingDocs[i];
 				Meteor.defer(function() {
 					_this.insert.call(_this, doc);
@@ -77,16 +77,16 @@ if (Meteor.isServer) {
 				});
 			});
 		}
-		_this.q.await(function() {
+		localStorageQueue.await(function() {
 			Meteor.defer(function() {
 				_this._readyFlag.set(true);
-				console.log("Polled Collection " + name + " seeded with " + existingDocs.length.toString() + " docs from local storage.");
+				console.log("Dumb Collection " + name + " seeded with " + existingDocs.length.toString() + " docs from local storage.");
 			});
 		});
 
 	}
 
-	PolledCollection.prototype.sync = function(options) {
+	DumbCollection.prototype.sync = function(options) {
 
 		options = options || {};
 
@@ -97,7 +97,9 @@ if (Meteor.isServer) {
 			},
 			completionDep = new Deps.Dependency(),
 			results = {},
-			currentIds = [];
+			currentIds = [],
+			removeQueue = queue(),
+			insertQueue = queue();
 
 		_this._syncFlag.set(false);
 
@@ -115,7 +117,7 @@ if (Meteor.isServer) {
 				console.log("Checking " + _this.name + " with " + currentIds.length + " docs");
 
 				if (!options.retain) {
-					Meteor.call('polledCollectionGetRemoved', currentIds, _this.name, options.query, function(err, res) {
+					Meteor.call('dumbCollectionGetRemoved', currentIds, _this.name, options.query, function(err, res) {
 						var removed = _this.find({
 							_id: {
 								$in: res
@@ -124,29 +126,43 @@ if (Meteor.isServer) {
 							reactive: false
 						}).fetch();
 						res.forEach(function(id) {
-							Meteor.defer(_this.remove.bind(_this, {
-								_id: id
-							}));
+							removeQueue.defer(function(cb) {
+								Meteor.defer(function(c) {
+									_this.remove({
+										_id: id
+									});
+									cb();
+								});
+							});
 						});
-						Meteor.defer(function() {
-							results.removed = removed;
-							jobsComplete.remove = true;
-							completionDep.changed();
-							options.removalCallback && options.removalCallback.call(_this, removed);
+						removeQueue.await(function() {
+							Meteor.defer(function() {
+								results.removed = removed;
+								jobsComplete.remove = true;
+								completionDep.changed();
+								options.removalCallback && options.removalCallback.call(_this, removed);
+							});
 						});
 					});
 				}
 
 				if (!options.reject) {
-					Meteor.call('polledCollectionGetNew', currentIds, _this.name, options.query, function(err, res) {
+					Meteor.call('dumbCollectionGetNew', currentIds, _this.name, options.query, function(err, res) {
 						results.inserted = res;
 						res.forEach(function(doc) {
-							Meteor.defer(_this.insert.bind(_this, doc));
+							insertQueue.defer(function(cb) {
+								Meteor.defer(function() {
+									_this.insert(doc);
+									cb();
+								});
+							});
 						});
-						Meteor.defer(function() {
-							jobsComplete.insert = true;
-							completionDep.changed();
-							options.insertionCallback && options.insertionCallback.call(_this, res);
+						insertQueue.await(function() {
+							Meteor.defer(function() {
+								jobsComplete.insert = true;
+								completionDep.changed();
+								options.insertionCallback && options.insertionCallback.call(_this, res);
+							});
 						});
 					});
 				}
@@ -157,13 +173,21 @@ if (Meteor.isServer) {
 
 					if (jobsComplete.remove && jobsComplete.insert) {
 
+						innerComp.stop()
 						outerComp.stop();
 						_this._syncFlag.set(true);
 
 						var syncedCollection = _this.find().fetch();
-						amplify.store('polledCollection_' + _this.name, syncedCollection);
-						console.log("Polled Collection " + _this.name + " now has " + syncedCollection.length + " documents stored locally.");
-						options.syncCallback && options.syncCallback.call(_this, results);
+						try {
+							amplify.store('dumbCollection_' + _this.name, syncedCollection);
+						}
+						catch (e) {
+							console.log("Pitches cannot be stored in Local Storage.")
+						}
+						finally {
+							console.log("Dumb Collection " + _this.name + " now has " + syncedCollection.length + " documents stored locally.");
+							options.syncCallback && options.syncCallback.call(_this, results);
+						}
 					}
 
 				});
@@ -174,20 +198,20 @@ if (Meteor.isServer) {
 
 	}
 
-	PolledCollection.prototype.clear = function() {
+	DumbCollection.prototype.clear = function() {
 
 		this.remove();
-		amplify.store('polledCollection_' + this.name, []);
+		amplify.store('dumbCollection_' + this.name, []);
 
 	}
 
-	PolledCollection.prototype.ready = function() {
+	DumbCollection.prototype.ready = function() {
 
 		return this._readyFlag.get();
 
 	}
 
-	PolledCollection.prototype.synced = function() {
+	DumbCollection.prototype.synced = function() {
 
 		return this._syncFlag.get();
 

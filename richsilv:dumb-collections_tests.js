@@ -6,6 +6,6 @@
  *
  */
 
-Tinytest.add('richsilv:polledcollection - main test', function (test) {
+Tinytest.add('richsilv:dumb-collections - main test', function (test) {
   test.ok();
 });
