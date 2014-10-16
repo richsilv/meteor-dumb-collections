@@ -114,8 +114,6 @@ if (Meteor.isServer) {
 					}
 				}).fetch(), '_id');
 
-				console.log("Checking " + _this.name + " with " + currentIds.length + " docs");
-
 				if (!options.retain) {
 					Meteor.call('dumbCollectionGetRemoved', currentIds, _this.name, options.query, function(err, res) {
 						var removed = _this.find({
