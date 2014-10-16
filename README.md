@@ -31,7 +31,7 @@ Synchronise data with the server.  Synchronisation is *always from server to cli
 
 __*query*__ - the Mongo query to apply on the server, which will dictate what data is returned.  If absent, the entire collection will be sent.  Note that documents which fall outside the query will be removed from the client collection unless `retain` is set to true.
 
-__*retain*__ - if set to `true`, the client collection will retain any documents which are not present on the server.  Default is `false`.
+__*retain*__ - if set to `true`, the client collection will retain any documents which are not present in the server result set.  Default is `false`.
 
 __*reject*__ - if set to `true`, the client collection will reject any new documents sent by the server.  Default is `false`.
 
