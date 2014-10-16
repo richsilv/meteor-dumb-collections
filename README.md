@@ -1,7 +1,7 @@
 richsilv:dumb-collections
 =======================
 
-Dumb Collections (in which the client syncs with server only on demand) for Meteor.js.
+Dumb Collections for Meteor, in which the client syncs with server only on demand.
 
 ## Why?
 
