@@ -27,19 +27,21 @@ Reactive variable:`true` once the first server `sync` has been completed.  On fu
 
 Synchronise data with the server.  Synchronisation is *always from server to client*.  If you want to write any data from the client to the server, you need to write Meteor.methods and call insert/update/remove on the server.  This would work in exactly the same way as for any normal collection.
 
-##### Options
+#### *Options*
 
-*retain* - if set to `true`, the client collection will retain any documents which are not present on the server.  Default is `false`.
+__*query*__ - the Mongo query to apply on the server, which will dictate what data is returned.  If absent, the entire collection will be sent.  Note that documents which fall outside the query will be removed from the client collection unless `retain` is set to true.
 
-*reject* - if set to `true`, the client collection will reject any new documents sent by the server.  Default is `false`.
+__*retain*__ - if set to `true`, the client collection will retain any documents which are not present on the server.  Default is `false`.
 
-*removalCallback(removedDocs)* - callback to run once any unrecognised documents are removed from the client collection, with the removed documents passed as an argument.
+__*reject*__ - if set to `true`, the client collection will reject any new documents sent by the server.  Default is `false`.
 
-*insertionCallback(insertedDocs)* - callback to run once any new documents sent by the server have been inserted, with the inserted documents passed as an argument.
+__*removalCallback(removedDocs)*__ - callback to run once any unrecognised documents are removed from the client collection, with the removed documents passed as an argument.
 
-*syncCallback(results)* - callback to run once the whole synchronisation is complete, with the results object containing the keys `removed` and `inserted`, which contain the same details as the previous callbacks respectively.
+__*insertionCallback(insertedDocs)*__ - callback to run once any new documents sent by the server have been inserted, with the inserted documents passed as an argument.
 
-*failCallback(error)* - callback to run on the failure to store the client collection in localStorage once synchronisation is complete.  This is passed the error object, which is almost always the result of the storage limit being exceeded.
+__*syncCallback(results)*__ - callback to run once the whole synchronisation is complete, with the results object containing the keys `removed` and `inserted`, which contain the same details as the previous callbacks respectively.
+
+__*failCallback(error)*__ - callback to run on the failure to store the client collection in localStorage once synchronisation is complete.  This is passed the error object, which is almost always the result of the storage limit being exceeded.
 
 #### DumbCollection.clear()
 
