@@ -21,7 +21,7 @@ Reactive variable: `true` once the initial load from localStorage is complete (w
 
 #### DumbCollection.synced()
 
-Reactive variable:`true` once the first server `sync` has been completed.  On further `sync` calls are collected, this will revert to `false` until the new sync is completed.
+Reactive variable:`true` once the first server `sync` has been completed.  On further `sync` calls, this will revert to `false` until the new sync is completed.
 
 #### DumbCollection.sync(options)
 
