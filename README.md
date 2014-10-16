@@ -25,7 +25,7 @@ Reactive variable:`true` once the first server `sync` has been completed.  On fu
 
 #### DumbCollection.sync(options)
 
-Synchronise data with the server.  Synchronisation is *always from server to client*.  If you want to write any data from the client to the server, you need to write Meteor.methods and call insert/update/remove on the server.  This would work in exactly the same way as for any normal collection.
+Synchronise data with the server.  Synchronisation is *always from server to client*.  If you want to write any data from the client to the server, you need to write Meteor.methods and call insert/update*/remove on the server.  This would work in exactly the same way as for any normal collection (although see below for update).
 
 #### *Options*
 
