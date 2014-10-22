@@ -201,6 +201,7 @@ if (Meteor.isServer) {
 
 		this.remove({});
 		amplify.store('dumbCollection_' + this.name, []);
+		this._syncFlag.set(false);
 
 	}
 
