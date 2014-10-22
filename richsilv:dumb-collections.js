@@ -84,7 +84,7 @@ if (Meteor.isServer) {
 			});
 		});
 
-	}
+	};
 
 	DumbCollection.prototype.sync = function(options) {
 
@@ -195,7 +195,7 @@ if (Meteor.isServer) {
 
 		});
 
-	}
+	};
 
 	DumbCollection.prototype.clear = function() {
 
@@ -203,18 +203,30 @@ if (Meteor.isServer) {
 		amplify.store('dumbCollection_' + this.name, []);
 		this._syncFlag.set(false);
 
-	}
+	};
 
 	DumbCollection.prototype.ready = function() {
 
 		return this._readyFlag.get();
 
-	}
+	};
 
 	DumbCollection.prototype.synced = function() {
 
 		return this._syncFlag.get();
 
-	}
+	};
+
+	DumbCollection.prototype.ironRouterReady = function() {
+
+		var _this = this;
+
+		return {
+			ready: function() {
+				return _this._syncFlag.get();
+			}
+		}
+
+	};
 
 }
