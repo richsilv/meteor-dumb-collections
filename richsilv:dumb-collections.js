@@ -199,7 +199,7 @@ if (Meteor.isServer) {
 
 	DumbCollection.prototype.clear = function() {
 
-		this.remove();
+		this.remove({});
 		amplify.store('dumbCollection_' + this.name, []);
 
 	}
