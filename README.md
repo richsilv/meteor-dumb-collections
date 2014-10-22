@@ -57,9 +57,11 @@ waitOn: function() {
 }
 ```
 
-**Note 1** - If you only want to wait for the collection to be loaded from localStorage rather than being synchronised, just return the collection itself (i.e. `return MyDumbCollection;`).
+**Note 1** - This relates to the 1.0.0 release of Iron Router - it is untested with previous versions.
 
-**Note 2** - If you want to run the synchronisation from Iron Router hooks, you *must* do this from the `onRun` hook, rather than `onBeforeAction`, `data`, or any of the other reactive hooks.  If you don't then the route will continually reload reactively and the Dumb Collection will try to resynchronise each time.  See the demo for an example.
+**Note 2** - If you only want to wait for the collection to be loaded from localStorage rather than being synchronised, just return the collection itself (i.e. `return MyDumbCollection;`).
+
+**Note 3** - If you want to run the synchronisation from Iron Router hooks, you *must* do this from the `onRun` hook, rather than `onBeforeAction`, `data`, or any of the other reactive hooks.  If you don't then the route will continually reload reactively and the Dumb Collection will try to resynchronise each time.  See the demo for an example.
 
 ## Limitations
 
