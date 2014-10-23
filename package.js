@@ -1,6 +1,6 @@
 Package.describe({
   name: 'richsilv:dumb-collections',
-  version: '1.0.7',
+  version: '1.0.8',
   summary: 'Meteor Collections which only sync with the server on request and are saved in local storage.',
   git: 'https://github.com/richsilv/meteor-dumb-collections.git'
 });
@@ -25,8 +25,6 @@ Package.on_use(function (api) {
 
   api.add_files('queue/queue.js', ['client', 'server']);
   api.add_files('richsilv:dumb-collections.js', ['client', 'server']);
-
-  console.log('dev version');
 
   /*
    * Export global symbols.
