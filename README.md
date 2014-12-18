@@ -7,6 +7,12 @@ Dumb Collections for Meteor, in which the client syncs with server only on deman
 
 To avoid the livedata overhead associated with the usual pub/sub model, whilst retaining the benefits of minimongo and the Collections API.  Also utilises localStorage to improve load times.
 
+## NEW IN VERSION 1.1.0
+
+* Now compatible with Collection2.
+* Ability to specify `options` as well as `query` when syncing.
+* Insertion and removal is now far, far more efficient.
+
 ## Usage
 
 ```javascript```
@@ -30,6 +36,8 @@ Synchronise data with the server.  Synchronisation is *always from server to cli
 #### *Options*
 
 __*query*__ - the Mongo query to apply on the server, which will dictate what data is returned.  If absent, the entire collection will be sent.  Note that documents which fall outside the query will be removed from the client collection unless `retain` is set to true.
+
+__*options*__ - query options, as per [the Collections API](http://docs.meteor.com/#/full/find).  `reactive` will be ignored, `transform` is untested.
 
 __*retain*__ - if set to `true`, the client collection will retain any documents which are not present in the server result set.  Default is `false`.
 
