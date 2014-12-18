@@ -52,7 +52,7 @@ if (Meteor.isServer) {
 
 } else if (Meteor.isClient) {
 
-	DumbCollection = function(name, maxOps, interval) {
+	DumbCollection = function(name) {
 
 		var _this = this,
 			existingDocs = amplify.store('dumbCollection_' + name) || [];
