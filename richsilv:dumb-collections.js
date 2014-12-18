@@ -20,29 +20,31 @@ if (Meteor.isServer) {
 
 	Meteor.methods({
 
-		dumbCollectionGetNew: function(existing, name, query) {
+		dumbCollectionGetNew: function(existing, name, query, options) {
 
 			return collections[name].find(_.extend(query || {}, {
 				_id: {
 					$nin: existing
 				}
-			})).fetch();
+			}), options).fetch();
 
 		},
 
 		dumbCollectionGetRemoved: function(existing, name, query) {
 
-			var currentIds = _.pluck(collections[name].find(query || {}, {
+			var currentIds = collections[name].find(query || {}, {
 				fields: {
 					_id: true
 				}
-			}).fetch(), '_id');
+			}).fetch();
 
 			this.unblock();
-			return _.reduce(existing, function(list, nextId) {
-				if (_.indexOf(currentIds, nextId) === -1) list.push(nextId);
-				return list;
-			}, []);
+
+			var missingIds = existing.filter(function(docId){
+			    return !(docId in currentIds);
+			});
+
+			return missingIds;
 
 		}
 
@@ -53,38 +55,19 @@ if (Meteor.isServer) {
 	DumbCollection = function(name, maxOps, interval) {
 
 		var _this = this,
-			existingDocs = amplify.store('dumbCollection_' + name) || [],
-			localStorageQueue = queue();
+			existingDocs = amplify.store('dumbCollection_' + name) || [];
 
 		this.name = name;
-		this._collection = new Mongo.Collection(null);
 		this._readyFlag = new ReactiveVar(false);
 		this._syncFlag = new ReactiveVar(false);
 
-		for (prop in this._collection) {
-			if (typeof _this._collection[prop] === 'function')
-				_this[prop] = _this._collection[prop].bind(_this._collection);
-			else
-				_this[prop] = _this._collection[prop];
-		}
-
-		for (var i = existingDocs.length - 1; i >= 0; i--) {
-			localStorageQueue.defer(function(cb) {
-				var doc = existingDocs[i];
-				Meteor.defer(function() {
-					_this.insert.call(_this, doc);
-					cb();
-				});
-			});
-		}
-		localStorageQueue.await(function() {
-			Meteor.defer(function() {
-				_this._readyFlag.set(true);
-				console.log("Dumb Collection " + name + " seeded with " + existingDocs.length.toString() + " docs from local storage.");
-			});
-		});
+		Models.insertBulk(this, existingDocs);
+		_this._readyFlag.set(true);
+		console.log("Dumb Collection " + name + " seeded with " + existingDocs.length.toString() + " docs from local storage.");
 
 	};
+
+	DumbCollection.prototype = new Mongo.Collection(null);
 
 	DumbCollection.prototype.sync = function(options) {
 
@@ -97,9 +80,7 @@ if (Meteor.isServer) {
 			},
 			completionDep = new Deps.Dependency(),
 			results = {},
-			currentIds = [],
-			removeQueue = queue(),
-			insertQueue = queue();
+			currentIds = [];
 
 		_this._syncFlag.set(false);
 
@@ -116,52 +97,21 @@ if (Meteor.isServer) {
 
 				if (!options.retain) {
 					Meteor.call('dumbCollectionGetRemoved', currentIds, _this.name, options.query, function(err, res) {
-						var removed = _this.find({
-							_id: {
-								$in: res
-							}
-						}, {
-							reactive: false
-						}).fetch();
-						res.forEach(function(id) {
-							removeQueue.defer(function(cb) {
-								Meteor.defer(function(c) {
-									_this.remove({
-										_id: id
-									});
-									cb();
-								});
-							});
-						});
-						removeQueue.await(function() {
-							Meteor.defer(function() {
-								results.removed = removed;
-								jobsComplete.remove = true;
-								completionDep.changed();
-								options.removalCallback && options.removalCallback.call(_this, removed);
-							});
-						});
+						Models.removeBulk(_this, res);
+						results.removed = res;
+						jobsComplete.remove = true;
+						completionDep.changed();
+						options.removalCallback && options.removalCallback.call(_this, removed);
 					});
 				}
 
 				if (!options.reject) {
-					Meteor.call('dumbCollectionGetNew', currentIds, _this.name, options.query, function(err, res) {
+					Meteor.call('dumbCollectionGetNew', currentIds, _this.name, options.query, options.options, function(err, res) {
 						results.inserted = res;
-						res.forEach(function(doc) {
-							insertQueue.defer(function(cb) {
-								Meteor.defer(function() {
-									_this.insert(doc);
-									cb();
-								});
-							});
-						});
-						insertQueue.await(function() {
-							Meteor.defer(function() {
-								jobsComplete.insert = true;
-								completionDep.changed();
-								options.insertionCallback && options.insertionCallback.call(_this, res);
-							});
-						});
+						Models.insertBulk(_this, res);
+						jobsComplete.insert = true;
+						completionDep.changed();
+						options.insertionCallback && options.insertionCallback.call(_this, res);
 					});
 				}
 
