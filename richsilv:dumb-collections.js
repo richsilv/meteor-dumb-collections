@@ -32,11 +32,15 @@ if (Meteor.isServer) {
 
 		dumbCollectionGetRemoved: function(existing, name, query) {
 
-			var currentIds = collections[name].find(query || {}, {
+			var currentIds = {};
+			
+			collections[name].find(query || {}, {
 				fields: {
 					_id: true
 				}
-			}).fetch();
+			}).forEach(function(doc) {
+				currentIds[doc._id] = true;
+			});
 
 			this.unblock();
 
@@ -44,7 +48,7 @@ if (Meteor.isServer) {
 			    return !(docId in currentIds);
 			});
 
-			return missingIds;
+			return missingIds || [];
 
 		}
 
@@ -58,6 +62,7 @@ if (Meteor.isServer) {
 			existingDocs = amplify.store('dumbCollection_' + name) || [];
 
 		this.name = name;
+		this.syncing = false;
 		this._readyFlag = new ReactiveVar(false);
 		this._syncFlag = new ReactiveVar(false);
 
@@ -73,6 +78,8 @@ if (Meteor.isServer) {
 
 		options = options || {};
 
+		if (this.syncing) throw new Meteor.Error('already_syncing', 'Cannot sync whilst already syncing');
+
 		var _this = this,
 			jobsComplete = {
 				remove: options.retain,
@@ -86,9 +93,11 @@ if (Meteor.isServer) {
 
 		Tracker.autorun(function(outerComp) {
 
-			if (_this.ready()) {
+			if (_this.ready() && !_this.syncing) {
 
-				currentIds = _.pluck(_this.find({}, {
+				_this.sycing = true;
+
+					currentIds = _.pluck(_this.find({}, {
 					reactive: false,
 					fields: {
 						_id: 1
@@ -96,7 +105,7 @@ if (Meteor.isServer) {
 				}).fetch(), '_id');
 
 				if (!options.retain) {
-					Meteor.call('dumbCollectionGetRemoved', currentIds, _this.name, options.query, function(err, res) {
+					Meteor.call('dumbCollectionGetRemoved', currentIds, _this.name, options.query, function(err, res) {	
 						Models.removeBulk(_this, res);
 						results.removed = res;
 						jobsComplete.remove = true;
@@ -124,6 +133,7 @@ if (Meteor.isServer) {
 						innerComp.stop()
 						outerComp.stop();
 						_this._syncFlag.set(true);
+						_this.syncing = false;
 
 						var syncedCollection = _this.find().fetch();
 						try {
@@ -147,12 +157,15 @@ if (Meteor.isServer) {
 
 	};
 
-	DumbCollection.prototype.clear = function() {
+	DumbCollection.prototype.clear = function(reactive) {
 
 		this.remove({});
 		amplify.store('dumbCollection_' + this.name, []);
-		this._syncFlag.set(false);
-
+		if (reactive) {
+			this._syncFlag.set(false);
+		} else {
+			this._syncFlag.curValue = false;
+		}
 	};
 
 	DumbCollection.prototype.ready = function() {
