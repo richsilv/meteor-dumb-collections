@@ -12,6 +12,7 @@ To avoid the livedata overhead associated with the usual pub/sub model, whilst r
 * Now compatible with Collection2.
 * Ability to specify `options` as well as `query` when syncing.
 * Insertion and removal is now far, far more efficient.
+* `reactive` parameter to allow client-side collection to be cleared non-reactively.
 
 ## Usage
 
@@ -33,7 +34,7 @@ Reactive variable:`true` once the first server `sync` has been completed.  On fu
 
 Synchronise data with the server.  Synchronisation is *always from server to client*.  If you want to write any data from the client to the server, you need to write Meteor.methods and call insert/update*/remove on the server.  This would work in exactly the same way as for any normal collection (although see below for update).
 
-#### *Options*
+##### *Options*
 
 __*query*__ - the Mongo query to apply on the server, which will dictate what data is returned.  If absent, the entire collection will be sent.  Note that documents which fall outside the query will be removed from the client collection unless `retain` is set to true.
 
@@ -51,9 +52,13 @@ __*syncCallback(results)*__ - callback to run once the whole synchronisation is 
 
 __*failCallback(error)*__ - callback to run on the failure to store the client collection in localStorage once synchronisation is complete.  This is passed the error object, which is almost always the result of the storage limit being exceeded.
 
-#### DumbCollection.clear()
+#### DumbCollection.clear(reactive)
 
 Clear the contents of the client-side collection, and associated local storage.
+
+##### reactive [BOOLEAN]
+
+This method will set the reactive variable returned by `synced()` to `false`.  However, by passing this flag, the value will be changed in a way which does not invalidate dependent computations.  Note that computations dependent on the documents in the collection itself will still be invalidated.
 
 #### DumbCollection.ironRouterReady()
 
