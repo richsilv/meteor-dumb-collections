@@ -26,7 +26,7 @@ if (Meteor.isServer) {
 				_id: {
 					$nin: existing
 				}
-			}), options).fetch();
+			}), options || {}).fetch();
 
 		},
 
