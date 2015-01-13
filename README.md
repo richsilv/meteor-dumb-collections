@@ -78,7 +78,7 @@ waitOn: function() {
 
 ## Using this package with Collection2 (or SimpleSchema)
 
-This package uses the `mizzao:user-status` package, which adds a `status` property to user objects.  This means that if you are applying a schema to you user objects with Collections2 (or SimpleSchema), you need to allow for this property in the schema definition as follows:
+DumbCollections uses the `mizzao:user-status` package, which adds a `status` property to user objects.  This means that if you are applying a schema to you user objects with Collections2 (or SimpleSchema), you need to allow for this property in the schema definition as follows:
 
 ```javascript
 Schemas.User = new SimpleSchema({
