@@ -9,7 +9,7 @@ To avoid the livedata overhead associated with the usual pub/sub model, whilst r
 
 ## NEW IN VERSION 1.1.0
 
-* Now compatible with Collection2.
+* Now compatible with Collection2 (BUT SEE IMPORTANT NOTE BELOW!!!).
 * Ability to specify `options` as well as `query` when syncing.
 * Insertion and removal is now far, far more efficient.
 * `reactive` parameter to allow client-side collection to be cleared non-reactively.
@@ -75,6 +75,21 @@ waitOn: function() {
 **Note 2** - If you only want to wait for the collection to be loaded from localStorage rather than being synchronised, just return the collection itself (i.e. `return MyDumbCollection;`).
 
 **Note 3** - If you want to run the synchronisation from Iron Router hooks, you *must* do this from the `onRun` hook, rather than `onBeforeAction`, `data`, or any of the other reactive hooks.  If you don't then the route will continually reload reactively and the Dumb Collection will try to resynchronise each time.  See the demo for an example.
+
+## Using this package with Collection2 (or SimpleSchema)
+
+This package uses the `mizzao:user-status` package, which adds a `status` property to user objects.  This means that if you are applying a schema to you user objects with Collections2 (or SimpleSchema), you need to allow for this property in the schema definition as follows:
+
+```javascript
+Schemas.User = new SimpleSchema({
+  status: {
+    type: Object,
+    optional: true,
+    blackbox: true
+  },
+  ... // other stuff
+});
+```
 
 ## Limitations
 
