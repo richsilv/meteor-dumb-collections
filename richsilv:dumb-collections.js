@@ -2,9 +2,9 @@ if (Meteor.isServer) {
 
 	var collections = {};
 
-	DumbCollection = function(name) {
+	DumbCollection = function(name, options) {
 
-		var newCollection = new Mongo.Collection(name),
+		var newCollection = new Mongo.Collection(name, options),
 			_this = this;
 
 		newCollection._update = newCollection.update;
@@ -56,140 +56,139 @@ if (Meteor.isServer) {
 
 } else if (Meteor.isClient) {
 
-	DumbCollection = function(name) {
+	DumbCollection = function(name, options) {
 
-		var _this = this,
-			existingDocs = amplify.store('dumbCollection_' + name) || [];
+		var coll = new Mongo.Collection(null, options);
 
-		this.name = name;
-		this.syncing = false;
-		this._readyFlag = new ReactiveVar(false);
-		this._syncFlag = new ReactiveVar(false);
+		var existingDocs = amplify.store('dumbCollection_' + name) || [];
 
-		Models.insertBulk(this, existingDocs);
-		_this._readyFlag.set(true);
+		coll.name = name;
+		coll.syncing = false;
+		coll._readyFlag = new ReactiveVar(false);
+		coll._syncFlag = new ReactiveVar(false);
+
+		Models.insertBulk(coll, existingDocs);
+		coll._readyFlag.set(true);
 		console.log("Dumb Collection " + name + " seeded with " + existingDocs.length.toString() + " docs from local storage.");
 
-	};
 
-	DumbCollection.prototype = new Mongo.Collection(null);
+		coll.sync = function(options) {
 
-	DumbCollection.prototype.sync = function(options) {
+			options = options || {};
 
-		options = options || {};
+			if (coll.syncing) throw new Meteor.Error('already_syncing', 'Cannot sync whilst already syncing');
 
-		if (this.syncing) throw new Meteor.Error('already_syncing', 'Cannot sync whilst already syncing');
+			var jobsComplete = {
+					remove: options.retain,
+					insert: options.reject
+				},
+				completionDep = new Deps.Dependency(),
+				results = {},
+				currentIds = [];
 
-		var _this = this,
-			jobsComplete = {
-				remove: options.retain,
-				insert: options.reject
-			},
-			completionDep = new Deps.Dependency(),
-			results = {},
-			currentIds = [];
+			coll._syncFlag.set(false);
 
-		_this._syncFlag.set(false);
+			Tracker.autorun(function(outerComp) {
 
-		Tracker.autorun(function(outerComp) {
+				if (coll.ready() && !coll.syncing) {
 
-			if (_this.ready() && !_this.syncing) {
+					coll.sycing = true;
 
-				_this.sycing = true;
-
-					currentIds = _.pluck(_this.find({}, {
-					reactive: false,
-					fields: {
-						_id: 1
-					}
-				}).fetch(), '_id');
-
-				if (!options.retain) {
-					Meteor.call('dumbCollectionGetRemoved', currentIds, _this.name, options.query, function(err, res) {	
-						Models.removeBulk(_this, res);
-						results.removed = res;
-						jobsComplete.remove = true;
-						completionDep.changed();
-						options.removalCallback && options.removalCallback.call(_this, removed);
-					});
-				}
-
-				if (!options.reject) {
-					Meteor.call('dumbCollectionGetNew', currentIds, _this.name, options.query, options.options, function(err, res) {
-						results.inserted = res;
-						Models.insertBulk(_this, res);
-						jobsComplete.insert = true;
-						completionDep.changed();
-						options.insertionCallback && options.insertionCallback.call(_this, res);
-					});
-				}
-
-				Tracker.autorun(function(innerComp) {
-
-					completionDep.depend();
-
-					if (jobsComplete.remove && jobsComplete.insert) {
-
-						innerComp.stop()
-						outerComp.stop();
-						_this._syncFlag.set(true);
-						_this.syncing = false;
-
-						var syncedCollection = _this.find().fetch();
-						try {
-							amplify.store('dumbCollection_' + _this.name, syncedCollection);
+						currentIds = _.pluck(coll.find({}, {
+						reactive: false,
+						fields: {
+							_id: 1
 						}
-						catch (e) {
-							console.log("Collection cannot be stored in Local Storage.");
-							options.failCallback && options.failCallback.call(_this, e);
-						}
-						finally {
-							console.log("Dumb Collection " + _this.name + " now has " + syncedCollection.length + " documents stored locally.");
-							options.syncCallback && options.syncCallback.call(_this, results);
-						}
+					}).fetch(), '_id');
+
+					if (!options.retain) {
+						Meteor.call('dumbCollectionGetRemoved', currentIds, coll.name, options.query, function(err, res) {
+							Models.removeBulk(coll, res);
+							results.removed = res;
+							jobsComplete.remove = true;
+							completionDep.changed();
+							options.removalCallback && options.removalCallback.call(coll, removed);
+						});
 					}
 
-				});
+					if (!options.reject) {
+						Meteor.call('dumbCollectionGetNew', currentIds, coll.name, options.query, options.options, function(err, res) {
+							results.inserted = res;
+							Models.insertBulk(coll, res);
+							jobsComplete.insert = true;
+							completionDep.changed();
+							options.insertionCallback && options.insertionCallback.call(coll, res);
+						});
+					}
 
+					Tracker.autorun(function(innerComp) {
+
+						completionDep.depend();
+
+						if (jobsComplete.remove && jobsComplete.insert) {
+
+							innerComp.stop()
+							outerComp.stop();
+							coll._syncFlag.set(true);
+							coll.syncing = false;
+
+							var syncedCollection = coll.find().fetch();
+							try {
+								amplify.store('dumbCollection_' + coll.name, syncedCollection);
+							}
+							catch (e) {
+								console.log("Collection cannot be stored in Local Storage.");
+								options.failCallback && options.failCallback.call(coll, e);
+							}
+							finally {
+								console.log("Dumb Collection " + coll.name + " now has " + syncedCollection.length + " documents stored locally.");
+								options.syncCallback && options.syncCallback.call(coll, results);
+							}
+						}
+
+					});
+
+				}
+
+			});
+
+		};
+
+		coll.clear = function(reactive) {
+
+			Models.removeAll(coll);
+			amplify.store('dumbCollection_' + coll.name, []);
+			if (reactive) {
+				coll._syncFlag.set(false);
+			} else {
+				coll._syncFlag.curValue = false;
+			}
+		};
+
+		coll.ready = function() {
+
+			return coll._readyFlag.get();
+
+		};
+
+		coll.synced = function() {
+
+			return coll._syncFlag.get();
+
+		};
+
+		coll.ironRouterReady = function() {
+
+			return {
+				ready: function() {
+					return coll._syncFlag.get();
+				}
 			}
 
-		});
+		};
 
-	};
+		return coll;
 
-	DumbCollection.prototype.clear = function(reactive) {
-
-		this.remove({});
-		amplify.store('dumbCollection_' + this.name, []);
-		if (reactive) {
-			this._syncFlag.set(false);
-		} else {
-			this._syncFlag.curValue = false;
-		}
-	};
-
-	DumbCollection.prototype.ready = function() {
-
-		return this._readyFlag.get();
-
-	};
-
-	DumbCollection.prototype.synced = function() {
-
-		return this._syncFlag.get();
-
-	};
-
-	DumbCollection.prototype.ironRouterReady = function() {
-
-		var _this = this;
-
-		return {
-			ready: function() {
-				return _this._syncFlag.get();
-			}
-		}
-
-	};
+	}
 
 }

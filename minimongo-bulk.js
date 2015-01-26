@@ -43,3 +43,18 @@ Models.removeBulk = function(collection, ids){
         });
     }
 };
+
+/*
+Removes all documents in a collection.
+*/
+Models.removeAll = function(collection){
+    var _this = this;
+ 
+    if (collection) {
+        var exampleId = Object.keys(collection._collection._docs._map)[0];
+        var newObj = {};
+        if (exampleId) newObj[exampleId] = collection._collection._docs._map[exampleId];
+        collection._collection._docs._map = newObj;
+        if (exampleId) collection.remove({_id: exampleId});
+    }
+};
