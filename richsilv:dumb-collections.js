@@ -92,9 +92,9 @@ if (Meteor.isServer) {
 
 				if (coll.ready() && !coll.syncing) {
 
-					coll.sycing = true;
+					coll.syncing = true;
 
-						currentIds = _.pluck(coll.find({}, {
+					currentIds = _.pluck(coll.find({}, {
 						reactive: false,
 						fields: {
 							_id: 1
