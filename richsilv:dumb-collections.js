@@ -33,7 +33,7 @@ if (Meteor.isServer) {
 		dumbCollectionGetRemoved: function(existing, name, query) {
 
 			var currentIds = {};
-			
+
 			collections[name].find(query || {}, {
 				fields: {
 					_id: true
@@ -109,7 +109,7 @@ if (Meteor.isServer) {
 							completionDep.changed();
 							options.removalCallback && options.removalCallback.call(coll, removed);
 						});
-					}
+					} else jobsComplete.remove = true;
 
 					if (!options.reject) {
 						Meteor.call('dumbCollectionGetNew', currentIds, coll.name, options.query, options.options, function(err, res) {
@@ -119,7 +119,7 @@ if (Meteor.isServer) {
 							completionDep.changed();
 							options.insertionCallback && options.insertionCallback.call(coll, res);
 						});
-					}
+					} else jobsComplete.insert = true;
 
 					Tracker.autorun(function(innerComp) {
 
